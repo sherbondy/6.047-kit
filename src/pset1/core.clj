@@ -18,21 +18,22 @@
 
 (def neg-inf Integer/MIN_VALUE)
 
-(defn s-matrix [v w]
-  (let [v-len (count v) 
-        w-len (count w)]
-    (apply vector 
-      (for [i (range v-len)]
-        (int-array
-          (for [j (range w-len)]
-            (if (or (= j 0) (= i 0))
-              0
-              neg-inf)))))))
+(defn s-matrix [n m]
+  (vec
+    (for [i (range (inc n))]
+      (vec
+        (for [j (range (inc m))]
+          (if (or (= j 0) (= i 0))
+            0
+            neg-inf))))))
+
+(defn b-matrix [n m]
+  (vec (repeat (inc n) (vec (repeat (inc m) nil)))))
 
 (defn ppm [m]
   (print "[\n")
   (doseq [row m]
-    (print (vec row) "\n"))
+    (print row "\n"))
   (print "]\n"))
 
 
@@ -41,12 +42,6 @@
 (defn lcs 
   "Finds the longest common subsequence of two seqs v and w"
   [v w]
-  (let [v-len (count v) w-len (count w)
-        s (apply vector 
-            (for [i (range v-len)]
-              (int-array
-                (for [j (range w-len)]
-                  (if (or (= j 0) (= i 0))
-                    0
-                    neg-inf)))))]
+  (let [n (count v) m (count w)
+        s (s-matrix n m)]
     s))
