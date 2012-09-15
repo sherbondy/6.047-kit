@@ -25,55 +25,77 @@
   (print "]\n"))
 
 (defn seti [a [i j] v]
-  (aset a (int i) (int j) (int v)))
+  (aset a i j v))
 
 (defn getin [a [i j]]
   (aget a i j))
 
-(defn s-matrix [rows cols]
-  (let [s (make-array Integer/TYPE rows cols)]   
+(defn s-matrix 
+  "Initializes the score matrix with rows and columns set to 0"
+  [rows cols]
+  (let [s (make-array Long/TYPE rows cols)]   
     (doseq [r (range rows)
             c (range cols)]
       (seti s [r 0] 0)
       (seti s [0 c] 0))
     s))
 
-(defn b-matrix [rows cols]
-  (let [b (make-array clojure.lang.Keyword rows cols)]))
+(defn b-matrix 
+  "Initializes the backtracing pointer matrix"
+  [rows cols]
+  (let [b (make-array clojure.lang.Keyword rows cols)]
+    b))
 
-(defn lcs-matrix
-  "Builds and fills a matrix to find the longest common subsequence
-  (LCS) of two sequences s and t.
-  Both must be Indexed (supporting the nth method).
-  Returns a twodimensional array of Integers"
+;; could generalize this to support edit distance
+(defn lcs
+  "Returns the score of the lcs and the backtracing pointer matrix"
   [v w]
   (let [rows (inc (count v))
         cols (inc (count w))
-        s (s-matrix rows cols)]
+        s (s-matrix rows cols)
+        b (b-matrix rows cols)]
     (doseq [i (range 1 rows)]
       (doseq [j (range 1 cols)]
-        (seti s [i j]
-          (if (= (v (dec i)) (w (dec j)))
-            (inc (getin s [(dec i) (dec j)]))
-            (apply max (map (partial getin s) 
-                          [[i (dec j)]
-                          [(dec i) j]]))))))
-    s))
+        (let [up   [(dec i) j]
+              left [i (dec j)]
+              diag [(dec i) (dec j)]]
 
-(defn lcs-vec
-  "Given a lcs-matrix (created with the lcs-matrix function) and the
-  corresponding sequences, returns the actual lcs as a vector."
-  [lcs-matrix s t & {:keys [compare] :or {compare =}}]
-  (let [m lcs-matrix
-        f (fn lcs-vec-rec [i j]
-            (cond (or (= 0 i) (= 0 j))
-                  []
-                  (compare (nth s (dec i)) (nth t (dec j)))
-                  (conj (lcs-vec-rec (dec i) (dec j)) (nth s (dec i)))
-                  (< (aget m i (dec j)) (aget m (dec i) j))
-                  (lcs-vec-rec (dec i) j)
-                  :else
-                  (lcs-vec-rec i (dec j))))]
-    (f (count s) (count t))))
+          (seti s [i j]
+            (if (= (v (dec i)) (w (dec j)))
+              (inc (getin s diag))
+              (apply max (map (partial getin s) 
+                            [left
+                             up]))))
+
+          (seti b [i j]
+            (condp = (getin s [i j])
+              (getin s up)         :up
+              (getin s left)       :left
+              (inc (getin s diag)) :diag))
+      )))
+
+    [(getin s [(dec rows) (dec cols)])
+     b]))
+
+(defn lcs-vector 
+  "Returns the actual longest common subsequence as a vector.
+   Takes the backtracing pointer matrix and the 
+   corresponding first vector argument (v) of lcs as input."
+  [b v]
+  (loop [i (- (count b) 2) 
+         j (- (count (nth b 0)) 2) 
+         m []]
+    (if (or (= i 0) (= j 0)) m
+      ; else
+      (let [bij (getin b [i j])
+            [ri rj]
+            (if (= bij :diag) [(dec i) (dec j)]
+              ;else
+              (if (= bij :up) [(dec i) j]
+                ;else
+                [i (dec j)]))]
+
+        (recur ri rj (if (= bij :diag) (cons (v i) m) m))
+))))
 
 
