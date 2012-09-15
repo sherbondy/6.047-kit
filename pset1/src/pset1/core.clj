@@ -46,6 +46,10 @@
   (let [b (make-array clojure.lang.Keyword rows cols)]
     b))
 
+;; The following is based on: https://github.com/hoeck/seq-diff
+;; but I've gutted the procedure and plan to make it the abstract
+;; basis for lcs with arbitrary scoring matrices.
+
 ;; could generalize this to support edit distance
 (defn lcs
   "Returns the score of the lcs and the backtracing pointer matrix"
